@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatterDocs Portal</title>
+  <meta name="google-client-id" content="your-google-client-id.apps.googleusercontent.com">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="app">
+    <aside class="servers" id="servers"></aside>
+    <aside class="channels">
+      <header>
+        <div>
+          <h1>ChatterDocs</h1>
+          <p class="subtitle">Chat + Minecraft</p>
+        </div>
+        <button id="themeToggle">Toggle Theme</button>
+      </header>
+      <div class="channel-list" id="rooms"></div>
+      <footer class="profile">
+        <div id="userInfo"></div>
+        <div class="auth">
+          <div id="googleSignIn"></div>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      </footer>
+    </aside>
+    <main class="content">
+      <section class="content-header">
+        <div>
+          <h2 id="roomTitle">Select a room</h2>
+          <p id="roomSubtitle"></p>
+        </div>
+        <div class="actions">
+          <button id="exportBtn">Download Transcript</button>
+          <button id="copyBtn">Copy Transcript</button>
+          <button id="copyChatGPTBtn">Copy for ChatGPT</button>
+        </div>
+      </section>
+      <section class="content-body">
+        <div class="messages" id="messages"></div>
+        <div class="game" id="gamePanel" hidden>
+          <h3>Minecraft Web Client</h3>
+          <p class="muted">Connect to the configured server for this room.</p>
+          <div class="game-embed" id="gameEmbed">Waiting for connection...</div>
+        </div>
+      </section>
+      <section class="composer">
+        <input type="text" id="messageInput" placeholder="Send a message" maxlength="240" />
+        <label class="toggle"><input type="checkbox" id="profanityToggle" checked /> Profanity filter</label>
+        <label class="toggle"><input type="checkbox" id="blurImagesToggle" /> Blur images</label>
+        <button id="sendBtn">Send</button>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
