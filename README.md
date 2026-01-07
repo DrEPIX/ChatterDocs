@@ -46,6 +46,7 @@ SQLite database lives in `backend/data/chatterdocs.db` (created automatically). 
 - Rate limits: chat send capped in the WebSocket layer per connection; adjust window and max as needed.
 - Input: message length limited, HTML not rendered; images only via links.
 - Auth required: `/api/me`, `/api/rooms`, `/api/messages/:roomId`, `/api/export/:roomId` now require a signed-in session; admin UI and room mutations also require `role=admin`.
+- Dev auth: set `DEV_AUTH=true` in `backend/.env` for a quick local-only login button. This is disabled in production.
 
 ## Manual test checklist
 - `npm install` (ensure registry access from your network).

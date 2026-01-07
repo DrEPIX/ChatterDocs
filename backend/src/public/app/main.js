@@ -16,6 +16,7 @@ const themeToggle = document.getElementById('themeToggle');
 const gamePanel = document.getElementById('gamePanel');
 const gameEmbed = document.getElementById('gameEmbed');
 const googleSignIn = document.getElementById('googleSignIn');
+const devSignInBtn = document.getElementById('devSignInBtn');
 
 let currentRoom = null;
 let ws = null;
@@ -188,25 +189,42 @@ function initGoogleSignIn() {
   const clientId = portalConfig?.googleClientId;
   if (!clientId || !window.google || !google.accounts) {
     googleSignIn.textContent = 'Configure GOOGLE_CLIENT_ID to enable sign-in.';
-    return;
+  } else {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: async (response) => {
+        try {
+          const result = await fetchJSON('/api/auth/google', {
+            method: 'POST',
+            body: JSON.stringify({ idToken: response.credential }),
+          });
+          userInfo.textContent = result.user.displayName || result.user.email;
+          googleSignIn.innerHTML = '';
+          await loadRooms();
+        } catch (error) {
+          googleSignIn.textContent = 'Unable to sign in, check console.';
+        }
+      },
+    });
+    google.accounts.id.renderButton(googleSignIn, { theme: 'outline', size: 'medium' });
   }
-  google.accounts.id.initialize({
-    client_id: clientId,
-    callback: async (response) => {
-      try {
-        const result = await fetchJSON('/api/auth/google', {
-          method: 'POST',
-          body: JSON.stringify({ idToken: response.credential }),
-        });
-        userInfo.textContent = result.user.displayName || result.user.email;
-        googleSignIn.innerHTML = '';
-        await loadRooms();
-      } catch (error) {
-        googleSignIn.textContent = 'Unable to sign in, check console.';
-      }
-    },
-  });
-  google.accounts.id.renderButton(googleSignIn, { theme: 'outline', size: 'medium' });
+  if (portalConfig?.devAuthEnabled) {
+    devSignInBtn.hidden = false;
+  }
 }
+
+devSignInBtn.addEventListener('click', async () => {
+  try {
+    const result = await fetchJSON('/api/auth/dev', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'Local Dev' }),
+    });
+    userInfo.textContent = result.user.displayName || result.user.email;
+    devSignInBtn.hidden = true;
+    await loadRooms();
+  } catch (error) {
+    devSignInBtn.textContent = 'Dev login unavailable';
+  }
+});
 
 bootstrap();

@@ -23,7 +23,7 @@ export async function verifyGoogleToken(idToken) {
 
 export function upsertUser({ email, name, sub }) {
   const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(sub);
-  const adminExists = db.prepare(\"SELECT COUNT(*) as count FROM users WHERE role = 'admin'\").get().count > 0;
+  const adminExists = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count > 0;
   if (!existing) {
     db.prepare(
       'INSERT INTO users (id, email, display_name, role) VALUES (@id, @email, @name, @role)'
@@ -37,6 +37,24 @@ export function upsertUser({ email, name, sub }) {
     db.prepare('UPDATE users SET display_name = ? WHERE id = ?').run(name, sub);
   }
   return db.prepare('SELECT * FROM users WHERE id = ?').get(sub);
+}
+
+export function upsertLocalUser({ id, email, name }) {
+  const existing = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+  const adminExists = db.prepare("SELECT COUNT(*) as count FROM users WHERE role = 'admin'").get().count > 0;
+  if (!existing) {
+    db.prepare(
+      'INSERT INTO users (id, email, display_name, role) VALUES (@id, @email, @name, @role)'
+    ).run({
+      id,
+      email,
+      name,
+      role: adminExists ? 'user' : 'admin',
+    });
+  } else if (existing.display_name !== name || existing.email !== email) {
+    db.prepare('UPDATE users SET display_name = ?, email = ? WHERE id = ?').run(name, email, id);
+  }
+  return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 }
 
 export function ensureAdmin(user) {
