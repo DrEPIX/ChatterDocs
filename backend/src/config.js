@@ -8,4 +8,5 @@ export const config = {
   googleClientId: process.env.GOOGLE_CLIENT_ID || '',
   baseUrl: process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`,
   cookieSecure: process.env.NODE_ENV === 'production',
+  devAuthEnabled: process.env.DEV_AUTH === 'true' && process.env.NODE_ENV !== 'production',
 };
