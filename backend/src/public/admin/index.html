@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatterDocs Admin</title>
+  <link rel="stylesheet" href="../app/styles.css">
+</head>
+<body>
+  <main class="content" style="grid-column: 1 / -1;">
+    <section class="content-header">
+      <div>
+        <h1>Admin Panel</h1>
+        <p class="muted">Configure rooms, Minecraft endpoints, and defaults</p>
+      </div>
+      <div class="actions">
+        <button id="refreshBtn">Refresh</button>
+      </div>
+    </section>
+    <section class="content-body" style="grid-template-columns: 1fr 1fr;">
+      <div class="messages" id="roomsPanel">
+        <h3>Rooms</h3>
+        <div id="rooms"></div>
+      </div>
+      <div class="messages">
+        <h3>Create / Update Room</h3>
+        <form id="roomForm">
+          <label>Name <input type="text" name="name" required></label>
+          <label>Description <input type="text" name="description"></label>
+          <label>Type
+            <select name="type">
+              <option value="chat">Chat only</option>
+              <option value="minecraft">Minecraft enabled</option>
+            </select>
+          </label>
+          <label>Minecraft Host <input type="text" name="minecraft_host" placeholder="wss://mc.example.com"></label>
+          <label>Minecraft Port <input type="number" name="minecraft_port" placeholder="443"></label>
+          <label>Minecraft Version <input type="text" name="minecraft_version" placeholder="1.20.x"></label>
+          <label>Minecraft Web Client URL <input type="url" name="minecraft_web_url" placeholder="https://web-client.example"></label>
+          <label>Resource Pack/Modpack <input type="text" name="resource_pack" placeholder="URL or label"></label>
+          <div class="actions" style="margin-top:12px;">
+            <button type="submit">Save Room</button>
+            <button type="button" id="deleteBtn">Delete</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
