@@ -153,6 +153,67 @@ app.get('/api/messages/:roomId', requireAuth, (req, res) => {
   res.json({ messages });
 });
 
+app.get('/api/friends', requireAuth, (req, res) => {
+  const friends = db
+    .prepare(
+      `SELECT users.id, users.display_name, users.email
+       FROM friends
+       JOIN users ON users.id = friends.friend_id
+       WHERE friends.user_id = ?`
+    )
+    .all(req.session.user.id);
+  const requests = db
+    .prepare(
+      `SELECT friend_requests.id, friend_requests.requester_id, friend_requests.recipient_email, friend_requests.created_at,
+              users.display_name as requester_name, users.email as requester_email
+       FROM friend_requests
+       JOIN users ON users.id = friend_requests.requester_id
+       WHERE friend_requests.recipient_email = ?`
+    )
+    .all(req.session.user.email);
+  res.json({ friends, requests });
+});
+
+app.post('/api/friends/request', requireAuth, (req, res) => {
+  const { email } = req.body || {};
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ error: 'Email required' });
+  }
+  const recipient = db.prepare('SELECT * FROM users WHERE email = ?').get(email.trim());
+  if (!recipient) {
+    return res.status(404).json({ error: 'User not found' });
+  }
+  if (recipient.id === req.session.user.id) {
+    return res.status(400).json({ error: 'Cannot friend yourself' });
+  }
+  const existing = db
+    .prepare('SELECT * FROM friends WHERE user_id = ? AND friend_id = ?')
+    .get(req.session.user.id, recipient.id);
+  if (existing) {
+    return res.status(400).json({ error: 'Already friends' });
+  }
+  db.prepare(
+    'INSERT INTO friend_requests (id, requester_id, recipient_email) VALUES (@id, @requester_id, @recipient_email)'
+  ).run({ id: nanoid(12), requester_id: req.session.user.id, recipient_email: recipient.email });
+  res.json({ ok: true });
+});
+
+app.post('/api/friends/accept', requireAuth, (req, res) => {
+  const { requestId } = req.body || {};
+  const request = db.prepare('SELECT * FROM friend_requests WHERE id = ?').get(requestId);
+  if (!request || request.recipient_email !== req.session.user.email) {
+    return res.status(404).json({ error: 'Request not found' });
+  }
+  db.prepare(
+    'INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)'
+  ).run(request.requester_id, req.session.user.id);
+  db.prepare(
+    'INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)'
+  ).run(req.session.user.id, request.requester_id);
+  db.prepare('DELETE FROM friend_requests WHERE id = ?').run(requestId);
+  res.json({ ok: true });
+});
+
 app.post('/api/export/:roomId', requireAuth, (req, res) => {
   const { roomId } = req.params;
   const messages = db

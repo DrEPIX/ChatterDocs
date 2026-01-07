@@ -19,6 +19,18 @@
         <button id="themeToggle">Toggle Theme</button>
       </header>
       <div class="channel-list" id="rooms"></div>
+      <div class="friends-panel">
+        <div class="friends-header">
+          <h3>Friends</h3>
+          <button id="refreshFriendsBtn">Refresh</button>
+        </div>
+        <div class="friend-add">
+          <input type="email" id="friendEmail" placeholder="Add friend by email" />
+          <button id="addFriendBtn">Add</button>
+        </div>
+        <div class="friend-list" id="friendsList"></div>
+        <div class="friend-requests" id="friendRequests"></div>
+      </div>
       <footer class="profile">
         <div id="userInfo"></div>
         <div class="auth">
@@ -34,11 +46,7 @@
           <h2 id="roomTitle">Select a room</h2>
           <p id="roomSubtitle"></p>
         </div>
-        <div class="actions">
-          <button id="exportBtn">Download Transcript</button>
-          <button id="copyBtn">Copy Transcript</button>
-          <button id="copyChatGPTBtn">Copy for ChatGPT</button>
-        </div>
+        <div class="actions"></div>
       </section>
       <section class="content-body">
         <div class="messages" id="messages"></div>

@@ -58,6 +58,24 @@ CREATE TABLE IF NOT EXISTS configs (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS friends (
+  user_id TEXT NOT NULL,
+  friend_id TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'accepted',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(user_id, friend_id),
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY(friend_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS friend_requests (
+  id TEXT PRIMARY KEY,
+  requester_id TEXT NOT NULL,
+  recipient_email TEXT NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(requester_id) REFERENCES users(id) ON DELETE CASCADE
+);
 `);
 
 const roomColumns = db.prepare("PRAGMA table_info(rooms)").all();

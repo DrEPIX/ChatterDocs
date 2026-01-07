@@ -5,9 +5,11 @@ const roomTitleEl = document.getElementById('roomTitle');
 const roomSubtitleEl = document.getElementById('roomSubtitle');
 const messageInput = document.getElementById('messageInput');
 const sendBtn = document.getElementById('sendBtn');
-const exportBtn = document.getElementById('exportBtn');
-const copyBtn = document.getElementById('copyBtn');
-const copyChatGPTBtn = document.getElementById('copyChatGPTBtn');
+const friendsList = document.getElementById('friendsList');
+const friendRequests = document.getElementById('friendRequests');
+const friendEmail = document.getElementById('friendEmail');
+const addFriendBtn = document.getElementById('addFriendBtn');
+const refreshFriendsBtn = document.getElementById('refreshFriendsBtn');
 const profanityToggle = document.getElementById('profanityToggle');
 const blurImagesToggle = document.getElementById('blurImagesToggle');
 const userInfo = document.getElementById('userInfo');
@@ -22,7 +24,6 @@ const devSignInBtn = document.getElementById('devSignInBtn');
 
 let currentRoom = null;
 let ws = null;
-let transcript = [];
 let portalConfig = null;
 
 const profanityList = ['badword', 'curse'];
@@ -97,13 +98,31 @@ async function loadRooms() {
   }
 }
 
+async function loadFriends() {
+  try {
+    const { friends, requests } = await fetchJSON('/api/friends');
+    friendsList.innerHTML = friends.length
+      ? friends.map((friend) => `<div class="friend">${friend.display_name || friend.email}</div>`).join('')
+      : '<div class="muted">No friends yet.</div>';
+    friendRequests.innerHTML = requests.length
+      ? `<div class="muted">Requests</div>${requests
+          .map((req) => {
+            const label = req.requester_name || req.requester_email;
+            return `<div class="friend-request"><span>${label}</span><button data-request="${req.id}">Accept</button></div>`;
+          })
+          .join('')}`
+      : '';
+  } catch (error) {
+    friendsList.innerHTML = '<div class="muted">Sign in to manage friends.</div>';
+  }
+}
+
 function bindWebSocket(room) {
   if (ws) ws.close();
   ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws?room=${room.id}`);
   ws.addEventListener('message', (event) => {
     const payload = JSON.parse(event.data);
     if (payload.type === 'chat') {
-      transcript.push(payload);
       renderMessage(payload);
     }
   });
@@ -127,7 +146,6 @@ async function selectRoom(room) {
       : 'No web client URL configured.';
   }
   messagesEl.innerHTML = '';
-  transcript = [];
   const { messages } = await fetchJSON(`/api/messages/${room.id}`);
   messages.reverse().forEach((m) => {
     const entry = {
@@ -137,7 +155,6 @@ async function selectRoom(room) {
       user: { id: m.user_id, displayName: m.display_name },
       createdAt: m.created_at,
     };
-    transcript.push(entry);
     renderMessage(entry);
   });
   bindWebSocket(room);
@@ -154,22 +171,6 @@ function sendMessage() {
   if (!body) return;
   ws.send(JSON.stringify({ type: 'chat', body }));
   messageInput.value = '';
-}
-
-exportBtn.addEventListener('click', () => {
-  if (!currentRoom) return;
-  window.location.href = `/api/export/${currentRoom.id}`;
-});
-
-copyBtn.addEventListener('click', () => copyTranscript(transcript));
-copyChatGPTBtn.addEventListener('click', () => copyTranscript(transcript, true));
-
-function copyTranscript(entries, forChatGPT = false) {
-  const content = entries
-    .map((m) => `[${new Date(m.createdAt).toLocaleString()}] ${m.user.displayName}: ${m.body}`)
-    .join('\n');
-  const formatted = forChatGPT ? `Chat transcript from ChatterDocs:\n\n${content}` : content;
-  navigator.clipboard.writeText(formatted);
 }
 
 logoutBtn.addEventListener('click', async () => {
@@ -195,6 +196,36 @@ launchGameBtn.addEventListener('click', () => {
   gameEmbed.appendChild(frame);
 });
 
+addFriendBtn.addEventListener('click', async () => {
+  if (!friendEmail.value) return;
+  try {
+    await fetchJSON('/api/friends/request', {
+      method: 'POST',
+      body: JSON.stringify({ email: friendEmail.value.trim() }),
+    });
+    friendEmail.value = '';
+    await loadFriends();
+  } catch (error) {
+    friendEmail.value = '';
+  }
+});
+
+friendRequests.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-request]');
+  if (!button) return;
+  try {
+    await fetchJSON('/api/friends/accept', {
+      method: 'POST',
+      body: JSON.stringify({ requestId: button.dataset.request }),
+    });
+    await loadFriends();
+  } catch (error) {
+    console.error('Accept failed', error);
+  }
+});
+
+refreshFriendsBtn.addEventListener('click', loadFriends);
+
 async function bootstrap() {
   try {
     portalConfig = await fetchJSON('/api/config');
@@ -207,6 +238,7 @@ async function bootstrap() {
     const me = await fetchJSON('/api/me');
     userInfo.textContent = me.user.displayName || me.user.email;
     await loadRooms();
+    await loadFriends();
   } catch (error) {
     userInfo.textContent = 'Sign in required (Google)';
     initGoogleSignIn();
@@ -250,6 +282,7 @@ devSignInBtn.addEventListener('click', async () => {
     userInfo.textContent = result.user.displayName || result.user.email;
     devSignInBtn.hidden = true;
     await loadRooms();
+    await loadFriends();
   } catch (error) {
     devSignInBtn.textContent = 'Dev login unavailable';
   }
