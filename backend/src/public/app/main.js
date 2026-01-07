@@ -16,12 +16,10 @@ const themeToggle = document.getElementById('themeToggle');
 const gamePanel = document.getElementById('gamePanel');
 const gameEmbed = document.getElementById('gameEmbed');
 const googleSignIn = document.getElementById('googleSignIn');
-const devSignInBtn = document.getElementById('devSignInBtn');
 
 let currentRoom = null;
 let ws = null;
 let transcript = [];
-let portalConfig = null;
 
 const profanityList = ['badword', 'curse'];
 
@@ -169,13 +167,6 @@ themeToggle.addEventListener('click', () => {
 
 async function bootstrap() {
   try {
-    portalConfig = await fetchJSON('/api/config');
-  } catch (error) {
-    console.error('Config load failed', error);
-    userInfo.textContent = 'Unable to load config';
-    return;
-  }
-  try {
     const me = await fetchJSON('/api/me');
     userInfo.textContent = me.user.displayName || me.user.email;
     await loadRooms();
@@ -186,45 +177,29 @@ async function bootstrap() {
 }
 
 function initGoogleSignIn() {
-  const clientId = portalConfig?.googleClientId;
+  const clientIdMeta = document.querySelector('meta[name=\"google-client-id\"]');
+  const clientId = clientIdMeta?.content;
   if (!clientId || !window.google || !google.accounts) {
     googleSignIn.textContent = 'Configure GOOGLE_CLIENT_ID to enable sign-in.';
-  } else {
-    google.accounts.id.initialize({
-      client_id: clientId,
-      callback: async (response) => {
-        try {
-          const result = await fetchJSON('/api/auth/google', {
-            method: 'POST',
-            body: JSON.stringify({ idToken: response.credential }),
-          });
-          userInfo.textContent = result.user.displayName || result.user.email;
-          googleSignIn.innerHTML = '';
-          await loadRooms();
-        } catch (error) {
-          googleSignIn.textContent = 'Unable to sign in, check console.';
-        }
-      },
-    });
-    google.accounts.id.renderButton(googleSignIn, { theme: 'outline', size: 'medium' });
+    return;
   }
-  if (portalConfig?.devAuthEnabled) {
-    devSignInBtn.hidden = false;
-  }
+  google.accounts.id.initialize({
+    client_id: clientId,
+    callback: async (response) => {
+      try {
+        const result = await fetchJSON('/api/auth/google', {
+          method: 'POST',
+          body: JSON.stringify({ idToken: response.credential }),
+        });
+        userInfo.textContent = result.user.displayName || result.user.email;
+        googleSignIn.innerHTML = '';
+        await loadRooms();
+      } catch (error) {
+        googleSignIn.textContent = 'Unable to sign in, check console.';
+      }
+    },
+  });
+  google.accounts.id.renderButton(googleSignIn, { theme: 'outline', size: 'medium' });
 }
-
-devSignInBtn.addEventListener('click', async () => {
-  try {
-    const result = await fetchJSON('/api/auth/dev', {
-      method: 'POST',
-      body: JSON.stringify({ name: 'Local Dev' }),
-    });
-    userInfo.textContent = result.user.displayName || result.user.email;
-    devSignInBtn.hidden = true;
-    await loadRooms();
-  } catch (error) {
-    devSignInBtn.textContent = 'Dev login unavailable';
-  }
-});
 
 bootstrap();

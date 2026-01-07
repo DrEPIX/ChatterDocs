@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 import { nanoid } from 'nanoid';
 import { config } from './config.js';
 import db from './db.js';
-import { verifyGoogleToken, upsertUser, upsertLocalUser, ensureAdmin, createDemoRooms } from './auth.js';
+import { verifyGoogleToken, upsertUser, ensureAdmin, createDemoRooms } from './auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,13 +42,6 @@ app.use(sessionMiddleware);
 
 createDemoRooms();
 
-function requireAuth(req, res, next) {
-  if (!req.session.user) {
-    return res.status(401).json({ error: 'Not signed in' });
-  }
-  next();
-}
-
 app.post('/api/auth/google', async (req, res) => {
   try {
     const { idToken } = req.body;
@@ -65,19 +58,6 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-app.post('/api/auth/dev', (req, res) => {
-  if (!config.devAuthEnabled) {
-    return res.status(403).json({ error: 'Dev auth disabled' });
-  }
-  const { name } = req.body || {};
-  const safeName = typeof name === 'string' && name.trim() ? name.trim().slice(0, 40) : 'Dev User';
-  const id = `dev_${nanoid(10)}`;
-  const email = `${id}@local.test`;
-  const user = upsertLocalUser({ id, email, name: safeName });
-  req.session.user = { id: user.id, email: user.email, displayName: user.display_name, role: user.role };
-  return res.json({ user: req.session.user });
-});
-
 app.post('/api/logout', (req, res) => {
   req.session.destroy(() => {
     res.clearCookie('connect.sid');
@@ -85,19 +65,12 @@ app.post('/api/logout', (req, res) => {
   });
 });
 
-app.get('/api/me', requireAuth, (req, res) => {
+app.get('/api/me', (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: 'Not signed in' });
   return res.json({ user: req.session.user });
 });
 
-app.get('/api/config', (req, res) => {
-  res.json({
-    googleClientId: config.googleClientId || null,
-    baseUrl: config.baseUrl,
-    devAuthEnabled: config.devAuthEnabled,
-  });
-});
-
-app.get('/api/rooms', requireAuth, (req, res) => {
+app.get('/api/rooms', (req, res) => {
   const rooms = db.prepare('SELECT * FROM rooms').all();
   res.json({ rooms });
 });
@@ -142,7 +115,7 @@ app.delete('/api/rooms/:id', (req, res) => {
   }
 });
 
-app.get('/api/messages/:roomId', requireAuth, (req, res) => {
+app.get('/api/messages/:roomId', (req, res) => {
   const { roomId } = req.params;
   const messages = db
     .prepare(
@@ -153,7 +126,7 @@ app.get('/api/messages/:roomId', requireAuth, (req, res) => {
   res.json({ messages });
 });
 
-app.post('/api/export/:roomId', requireAuth, (req, res) => {
+app.post('/api/export/:roomId', (req, res) => {
   const { roomId } = req.params;
   const messages = db
     .prepare(

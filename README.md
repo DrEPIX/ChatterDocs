@@ -43,18 +43,8 @@ SQLite database lives in `backend/data/chatterdocs.db` (created automatically). 
 
 ## Security notes
 - Cookies: HttpOnly, SameSite=Lax, Secure in production. Update `BASE_URL` to match deployment origin.
-- Rate limits: chat send capped in the WebSocket layer per connection; adjust window and max as needed.
+- Rate limits: chat send capped via express-rate-limit; adjust window and max as needed.
 - Input: message length limited, HTML not rendered; images only via links.
-- Auth required: `/api/me`, `/api/rooms`, `/api/messages/:roomId`, `/api/export/:roomId` now require a signed-in session; admin UI and room mutations also require `role=admin`.
-- Dev auth: set `DEV_AUTH=true` in `backend/.env` for a quick local-only login button. This is disabled in production.
-
-## Manual test checklist
-- `npm install` (ensure registry access from your network).
-- `npm run dev`, visit `http://localhost:3000`.
-- Sign in with Google; first user becomes admin automatically.
-- Confirm rooms load and chat works; for a `minecraft` room the right panel shows the configured host/port.
-- Download and copy transcript buttons work.
-- Admin: visit `/admin`, create/update/delete rooms, and verify updates reflect in the portal list.
 
 ## Admin guidance for Minecraft
 - Set room type to `minecraft` and provide host/port/version/resource pack info.

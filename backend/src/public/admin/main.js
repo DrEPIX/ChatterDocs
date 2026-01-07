@@ -15,20 +15,15 @@ async function fetchJSON(url, options = {}) {
 }
 
 async function loadRooms() {
-  roomsEl.innerHTML = 'Loading...';
-  try {
-    const { rooms } = await fetchJSON('/api/rooms');
-    roomsEl.innerHTML = '';
-    rooms.forEach((room) => {
-      const card = document.createElement('div');
-      card.className = 'channel';
-      card.innerHTML = `<strong>${room.name}</strong><p>${room.type}</p>`;
-      card.addEventListener('click', () => selectRoom(room));
-      roomsEl.appendChild(card);
-    });
-  } catch (error) {
-    roomsEl.textContent = 'Admin access required or not signed in.';
-  }
+  const { rooms } = await fetchJSON('/api/rooms');
+  roomsEl.innerHTML = '';
+  rooms.forEach((room) => {
+    const card = document.createElement('div');
+    card.className = 'channel';
+    card.innerHTML = `<strong>${room.name}</strong><p>${room.type}</p>`;
+    card.addEventListener('click', () => selectRoom(room));
+    roomsEl.appendChild(card);
+  });
 }
 
 function selectRoom(room) {
@@ -48,26 +43,18 @@ form.addEventListener('submit', async (e) => {
   payload.minecraft_port = payload.minecraft_port ? Number(payload.minecraft_port) : null;
   const method = selectedRoom ? 'PUT' : 'POST';
   const url = selectedRoom ? `/api/rooms/${selectedRoom.id}` : '/api/rooms';
-  try {
-    await fetchJSON(url, { method, body: JSON.stringify(payload) });
-    selectedRoom = null;
-    form.reset();
-    await loadRooms();
-  } catch (error) {
-    alert('Save failed. Are you signed in as admin?');
-  }
+  await fetchJSON(url, { method, body: JSON.stringify(payload) });
+  selectedRoom = null;
+  form.reset();
+  await loadRooms();
 });
 
 deleteBtn.addEventListener('click', async () => {
   if (!selectedRoom) return;
-  try {
-    await fetchJSON(`/api/rooms/${selectedRoom.id}`, { method: 'DELETE' });
-    selectedRoom = null;
-    form.reset();
-    await loadRooms();
-  } catch (error) {
-    alert('Delete failed. Are you signed in as admin?');
-  }
+  await fetchJSON(`/api/rooms/${selectedRoom.id}`, { method: 'DELETE' });
+  selectedRoom = null;
+  form.reset();
+  await loadRooms();
 });
 
 refreshBtn.addEventListener('click', loadRooms);
